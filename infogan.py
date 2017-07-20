@@ -85,8 +85,7 @@ class InfoGAN():
 				self.sess.run(self.Q_opt, feed_dict=fd)
 
 			if epoch % 1000 == 0 :
-				Disc_current_loss = self.sess.run(self.Disc_loss, 
-												  feed_dict={self.X:batch_x, self.z:batch_z, self.c:batch_c})
+				Disc_current_loss = self.sess.run(self.Disc_loss, feed_dict={self.X:batch_x, self.z:batch_z, self.c:batch_c})
 				Gen_current_loss, Q_current_loss = self.sess.run([self.Gen_loss, self.Q_loss], feed_dict=fd)
 				print('epoch : {}, D_loss : {}, G_loss : {}, Q_loss : {}'.format(epoch, Disc_current_loss, Gen_current_loss, Q_current_loss))
 
