@@ -38,7 +38,7 @@ def generate_png(samples):
 		ax = plt.subplot(gs[i])
 		plt.axis('off')
 		ax.set_xticklabels([])
-		ax.set_yticklabels)[])
+		ax.set_yticklabels([])
 		ax.set_aspect('equal')
 		plt.imshow(sample)
 	return fig
@@ -50,7 +50,7 @@ class InfoGAN():
 		self.z_dim = 100
 		self.c_dim = 10 #num of classes
 		self.X = tf.placeholder(tf.float32, shape=[None, self.size, self.size])
-		self.z = tf.placeholder(tf.float32, shape=[None, self.z_dim]
+		self.z = tf.placeholder(tf.float32, shape=[None, self.z_dim])
 		self.c = tf.placeholder(tf.float32, shape=[None, self.c_dim])
 
 		self.Gen = models.gen_conv(tf.concat([self.z, self.c],1))
@@ -76,9 +76,9 @@ class InfoGAN():
 		for epoch in range(total_epochs):
 			batch_X, _ = self.data.train.next_batch(batch_size)
 			batch_z = np.random.uniform(-1., 1., size=[batch_size, self.z_dim])
-			batch_c = sample_c(batch_size self.c_dim)
+			batch_c = sample_c(batch_size, self.c_dim)
 
-			fd = {self.z=batch_z, self.c=batch_c}
+			fd = {self.z:batch_z, self.c:batch_c}
 			self.sess.run(self.Disc_opt, feed_dict=fd)
 			self.sess.run(self.Gen_opt, feed_dict=fd)
 			for _ in range(train_ratio):
