@@ -6,12 +6,13 @@ import models
 import argparse
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import tensorflow.contrib.slim as slim
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', type=str, default='data/mnist')
 parser.add_argument('--sample_dir', type=str, default='samples/mnist')
 parser.add_argument('--batch_size', type=int, default=32)
-parser.add_argument('--num_epoch', type=int, default=10e6)
+parser.add_argument('--num_epoch', type=int, default=100000)
 parser.add_argument('--train_ratio', type=int, default=2)
 
 config = parser.parse_args()
@@ -19,7 +20,7 @@ config = parser.parse_args()
 data = input_data.read_data_sets(config.data_dir, one_hot=True)
 
 def sigmoid_ce_loss(a,b):
-	return tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(a, b))
+	return tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=a,labels= b))
 
 def sample_c(m, n, ind=-1):
 	c = np.zeros([m,n])
@@ -49,7 +50,7 @@ class InfoGAN():
 		self.size = 28 
 		self.z_dim = 100
 		self.c_dim = 10 #num of classes
-		self.X = tf.placeholder(tf.float32, shape=[None, self.size, self.size])
+		self.X = tf.placeholder(tf.float32, shape=[None, self.size, self.size, 1])
 		self.z = tf.placeholder(tf.float32, shape=[None, self.z_dim])
 		self.c = tf.placeholder(tf.float32, shape=[None, self.c_dim])
 
@@ -59,7 +60,7 @@ class InfoGAN():
 
 		self.Gen_loss = sigmoid_ce_loss(self.Disc_real, tf.ones_like(self.Disc_real))
 		self.Disc_loss = sigmoid_ce_loss(self.Disc_fake, tf.ones_like(self.Disc_fake)) 
-		self.Q_loss = slim.losses.cross_entropy_loss(self.Q_fake, self.c)
+		self.Q_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.Q_fake,labels=self.c))
 
 		self.optimizer = tf.train.AdamOptimizer()
 		self.Gen_opt = self.optimizer.minimize(self.Gen_loss)
@@ -71,22 +72,22 @@ class InfoGAN():
 	def train(self, batch_size=config.batch_size, total_epochs=config.num_epoch, 
 			  sample_dir=config.sample_dir, train_ratio=config.train_ratio):
 		fig_count = 0
-		self.sess.run(tf_global_variables_initializer())
+		self.sess.run(tf.global_variables_initializer())
 
 		for epoch in range(total_epochs):
 			batch_X, _ = self.data.train.next_batch(batch_size)
+			batch_X = np.reshape(batch_X, (batch_size, self.size, self.size, 1))
 			batch_z = np.random.uniform(-1., 1., size=[batch_size, self.z_dim])
 			batch_c = sample_c(batch_size, self.c_dim)
 
-			fd = {self.z:batch_z, self.c:batch_c}
-			self.sess.run(self.Disc_opt, feed_dict=fd)
-			self.sess.run(self.Gen_opt, feed_dict=fd)
+			self.sess.run(self.Disc_opt, feed_dict={self.X:batch_X, self.z:batch_z, self.c:batch_c})
+			self.sess.run(self.Gen_opt, feed_dict={self.z:batch_z, self.c:batch_c})
 			for _ in range(train_ratio):
-				self.sess.run(self.Q_opt, feed_dict=fd)
+				self.sess.run(self.Q_opt, feed_dict={self.z:batch_z, self.c:batch_c})
 
 			if epoch % 1000 == 0 :
 				Disc_current_loss = self.sess.run(self.Disc_loss, feed_dict={self.X:batch_x, self.z:batch_z, self.c:batch_c})
-				Gen_current_loss, Q_current_loss = self.sess.run([self.Gen_loss, self.Q_loss], feed_dict=fd)
+				Gen_current_loss, Q_current_loss = self.sess.run([self.Gen_loss, self.Q_loss], feed_dict={self.z:batch_z, self.c:batch_c})
 				print('epoch : {}, D_loss : {}, G_loss : {}, Q_loss : {}'.format(epoch, Disc_current_loss, Gen_current_loss, Q_current_loss))
 
 			if epoch % 10000 == 0 :
@@ -100,6 +101,8 @@ class InfoGAN():
 				plt.close(fig)
 
 if __name__ == '__main__':
+	#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+	#os.environ["CUDA_VISIBLE_DEVICES"]= "2"
 	Learning_model = InfoGAN(data)
 	Learning_model.train()
 	
