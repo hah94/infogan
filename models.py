@@ -29,7 +29,7 @@ def disc_conv(x, name='D_conv', reuse=False, size=64):
 			net = slim.conv2d(net, size * 2, normalizer_fn=slim.batch_norm, scope='conv2')
 			net = slim.flatten(net) 
 			d = slim.fully_connected(net, 1, activation_fn=None, weights_initializer=tf.random_normal_initializer(0, 0.02), scope='fc_d')
-			q = slim.fully_connected(net, 128, actiavtion_fn=lrelu, normalizer_fn=slim.batch_norm, scope='fc_q1')
+			q = slim.fully_connected(net, 128, activation_fn=lrelu, normalizer_fn=slim.batch_norm, scope='fc_q1')
 			q = slim.fully_connected(q, 10, activation_fn=None, scope='fc_q2') # class num : 10
 
 			return d, q
